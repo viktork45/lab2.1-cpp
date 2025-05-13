@@ -1,109 +1,69 @@
 import 'package:flutter/material.dart';
+import 'database_helper.dart';
 
- 
-
-void main() {
-
-  runApp(MyApp());
-
-}
-
- 
+void main() => runApp(MyApp());
 
 class MyApp extends StatelessWidget {
-
   @override
-
   Widget build(BuildContext context) {
-
     return MaterialApp(
-
-      home: Scaffold(
-
-        appBar: AppBar(title: Text('Форма введення даних')),
-
-        body: InputForm(),
-
-      ),
-
+      title: 'Облік покупок',
+      home: PurchaseList(),
     );
-
   }
-
 }
 
- 
+class PurchaseList extends StatefulWidget {
+  @override
+  _PurchaseListState createState() => _PurchaseListState();
+}
 
-class InputForm extends StatefulWidget {
+class _PurchaseListState extends State<PurchaseList> {
+  List<Map<String, dynamic>> purchases = [];
 
   @override
+  void initState() {
+    super.initState();
+    _loadPurchases();
+  }
 
-  _InputFormState createState() => _InputFormState();
-
-}
-
- 
-
-class _InputFormState extends State<InputForm> {
-
-  final TextEditingController _controller = TextEditingController();
-
-  String _output = '';
-
- 
-
-  void _handleSubmit() {
-
+  Future<void> _loadPurchases() async {
+    final data = await DatabaseHelper.instance.getPurchases();
     setState(() {
-
-      _output = 'Ви ввели: ' + _controller.text;
-
+      purchases = data;
     });
-
   }
 
- 
+  Future<void> _addExample() async {
+    await DatabaseHelper.instance.addPurchase('Молоко', 2, 25.5);
+    _loadPurchases();
+  }
 
   @override
-
   Widget build(BuildContext context) {
-
-    return Padding(
-
-      padding: const EdgeInsets.all(16.0),
-
-      child: Column(
-
-        children: [
-
-          TextField(
-
-            controller: _controller,
-
-            decoration: InputDecoration(labelText: 'Введіть текст'),
-
-          ),
-
-          SizedBox(height: 10),
-
-          ElevatedButton(
-
-            onPressed: _handleSubmit,
-
-            child: Text('Відправити'),
-
-          ),
-
-          SizedBox(height: 20),
-
-          Text(_output, style: TextStyle(fontSize: 18)),
-
-        ],
-
+    return Scaffold(
+      appBar: AppBar(title: Text('Список покупок')),
+      body: ListView.builder(
+        itemCount: purchases.length,
+        itemBuilder: (context, index) {
+          final item = purchases[index];
+          return ListTile(
+            title: Text('${item['item']} (x${item['quantity']})'),
+            subtitle: Text('₴${item['price']}'),
+            trailing: IconButton(
+              icon: Icon(Icons.delete),
+              onPressed: () async {
+                await DatabaseHelper.instance.deletePurchase(item['id']);
+                _loadPurchases();
+              },
+            ),
+          );
+        },
       ),
-
+      floatingActionButton: FloatingActionButton(
+        onPressed: _addExample,
+        child: Icon(Icons.add),
+      ),
     );
-
   }
-
 }
